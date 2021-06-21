@@ -41,7 +41,7 @@ def create_board(
     session.refresh(board_db)
     return board_db
 
-@router.put("{board_id}", response_model=schemas.Board)
+@router.put("/{board_id}", response_model=schemas.Board)
 def update_board(
         board_id:int, payload: schemas.BoardUpdatePayload, session: Session=Depends(get_session)
         ) -> schemas.Board:
@@ -51,7 +51,7 @@ def update_board(
     session.commit()
     return board_db
 
-@router.delete("{board_id}")
+@router.delete("/{board_id}")
 def delete_board(
         board_id:int, session: Session=Depends(get_session)
         ) -> Response:
