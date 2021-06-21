@@ -8,7 +8,7 @@ Created: May 27, 2021 10:04 PM
 
     **Groupense Mockup**
 
-    ![Groupense%201839b495b8f64f75883045619ad13472/groupense-mockup.png](Groupense%201839b495b8f64f75883045619ad13472/groupense-mockup.png)
+    ![readme_resources/groupense-mockup.png](Groupense%201839b495b8f64f75883045619ad13472/groupense-mockup.png)
 
 ## Demo
 
