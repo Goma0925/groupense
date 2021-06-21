@@ -1,6 +1,8 @@
 # Groupense
 
-Created: May 27, 2021 10:04 PM
+## Demo
+
+- API demo & documentation are running at [**https://groupense.herokuapp.com/docs**](https://groupense.herokuapp.com/docs). It may take a while to load as it runs on a free tier Heroku server.
 
 ## About Groupense
 
@@ -9,7 +11,3 @@ Created: May 27, 2021 10:04 PM
     **Groupense Mockup**
 
     ![readme_resources/groupense-mockup.png](readme_resources/groupense-mockup.png)
-
-## Demo
-
-- API demo & documentation are running at [**https://groupense.herokuapp.com/docs**](https://groupense.herokuapp.com/docs). It may take a while to load as it runs on a free tier Heroku server.
