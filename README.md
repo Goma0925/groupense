@@ -11,3 +11,10 @@
     **Groupense Mockup**
 
     ![readme_resources/groupense-mockup.png](readme_resources/groupense-mockup.png)
+
+## Environment
+
+- Backend framework: FastAPI
+- Python ver: 3.9.5
+- Database: SQLite3
+
