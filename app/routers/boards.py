@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi import Response, status
 from sqlalchemy.orm import Session
 
-from app.db.db_util import get_session
+from app.db.middleware import get_session
 from app.db import schemas
 from app.db import models
 from app.util.json_response import error_json
@@ -37,6 +37,9 @@ def create_board(
         ) -> schemas.Board:
     board_db = models.Board(name=payload.name, access_key=payload.access_key)
     session.add(board_db)
+    # Create an owner permission
+
+
     session.commit()
     session.refresh(board_db)
     return board_db

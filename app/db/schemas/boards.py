@@ -5,7 +5,6 @@ from .members import Member
 class Board(BaseModel):
     name:str
     id:int
-    access_key:str
     members:list[Member]
     entries: list[Entry]
     class Config:

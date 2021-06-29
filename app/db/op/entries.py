@@ -4,7 +4,7 @@ from fastapi import HTTPException, status
 from app.db import models
 from app.util.json_response import error_json
 
-def get_entry_with_ids(board_id: int, entry_id: int, session: Session)\
+def get_entry_by_ids(board_id: int, entry_id: int, session: Session)\
         -> models.Entry:
     db_entry:models.Entry =\
         session.query(models.Entry) \

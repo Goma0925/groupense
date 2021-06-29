@@ -1,4 +1,6 @@
-from .boards import Board, BoardCreatePayload, BoardUpdatePayload
-from .entries import Entry, EntryCreatePayload, EntryUpdatePayload
-from .members import Member, MemberCreatePayload, MemberUpdatePayload
-from .transactions import Transaction, TransactionCreatePayloadWithMember, TransactionUpdatePayload
+from app.db.schemas.boards import *
+from app.db.schemas.entries import *
+from app.db.schemas.members import *
+from app.db.schemas.transactions import *
+from app.db.schemas.users import *
+from app.db.schemas.permissions import *

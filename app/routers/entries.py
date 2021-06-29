@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi import Response, status
 from sqlalchemy.orm import Session
 
-from app.db.db_util import get_session
+from app.db.middleware import get_session
 from app.db import schemas
 from app.db import models
 import app.db.op as op
@@ -23,7 +23,7 @@ def get_all_entries(
 def get_entry_by_id(
         board_id:int, entry_id:int, session:Session=Depends(get_session)
         ) -> models.Entry:
-    return op.entries.get_entry_with_ids(board_id, entry_id, session)
+    return op.entries.get_entry_by_ids(board_id, entry_id, session)
 
 @router.post("/boards/{board_id}/entries/", response_model=schemas.Entry)
 def create_entry(
@@ -39,7 +39,7 @@ def create_entry(
 def update_entry(
         board_id:int, entry_id:int, payload:schemas.EntryUpdatePayload, session:Session=Depends(get_session)
         ) -> models.Entry:
-    db_entry: models.Entry = op.entries.get_entry_with_ids(board_id, entry_id, session)
+    db_entry: models.Entry = op.entries.get_entry_by_ids(board_id, entry_id, session)
     for attr, val in payload.dict().items():
         setattr(db_entry, attr, val)
     session.commit()
@@ -50,7 +50,7 @@ def update_entry(
 def delete_entry(
         board_id:int, entry_id:int, session:Session=Depends(get_session)
         ) -> Response:
-    db_entry: models.Entry = op.entries.get_entry_with_ids(board_id, entry_id, session)
+    db_entry: models.Entry = op.entries.get_entry_by_ids(board_id, entry_id, session)
     session.delete(db_entry)
     session.commit()
     return Response(status_code=status.HTTP_200_OK)

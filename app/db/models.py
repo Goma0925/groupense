@@ -1,6 +1,26 @@
-from sqlalchemy import Numeric, Column, ForeignKey, Integer, String
+from sqlalchemy import Numeric, Column, ForeignKey, Integer, String, Boolean
 from sqlalchemy.orm import relationship
 from .database import Base
+
+class User(Base):
+    __tablename__ = "User"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, index=True)
+    hashed_password =Column(String)
+    permissions = relationship("Permission", back_populates="users",  cascade="all, delete-orphan")
+
+class Permission(Base):
+    """
+        Keeps the records of which users have access to which boards.
+        A linking table between User and Board
+    """
+    __tablename__ = "Permission"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("User.id"))
+    board_id = Column(Integer, ForeignKey("Board.id"))
+    is_owner = Column(Boolean)
+    users = relationship("User", back_populates="permissions")
+    boards = relationship("Board", back_populates="permissions")
 
 class Board(Base):
     __tablename__ = "Board"
@@ -9,6 +29,7 @@ class Board(Base):
     name = Column(String, index=True)
     members = relationship("Member", back_populates="board", cascade="all, delete-orphan")
     entries = relationship("Entry", back_populates="board", cascade="all, delete-orphan")
+    permissions = relationship("Permission", back_populates="boards",  cascade="all, delete-orphan")
 
 class Member(Base):
     __tablename__ = "Member"
