@@ -12,9 +12,7 @@ class Board(BaseModel):
 
 class BoardCreatePayload(BaseModel):
     name:str
-    access_key:str
 
 class BoardUpdatePayload(BaseModel):
     name:str
-    access_key:str
 

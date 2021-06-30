@@ -29,23 +29,23 @@ def signup(payload: schemas.UserSignupPayload, session: Session=Depends(get_sess
     db_existing_user: models.User = session.query(models.User).filter(models.User.name == payload.username).first()
     if db_existing_user:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error_json("Username '" + payload.username + "' is already taken."))
-    db_user = models.User(name=payload.username, hashed_password=auth_util.get_password_hash(payload.password))
-    session.add(db_user)
+    user_db = models.User(name=payload.username, hashed_password=auth_util.get_password_hash(payload.password))
+    session.add(user_db)
     session.commit()
-    session.refresh(db_user)
-    return db_user
+    session.refresh(user_db)
+    return user_db
 
 @router.post(TOKEN_ENDPOINT_PATH, response_model=schemas.UserJWTPayload)
 def login(payload: OAuth2PasswordRequestForm = Depends(), session: Session=Depends(get_session)):
-    db_user: models.User = op.users.get_user_by_name(payload.username, session)
-    if not auth_util.is_valid_password(payload.password, db_user.hashed_password):
+    user_db: models.User = op.users.get_user_by_name(payload.username, session)
+    if not auth_util.is_valid_password(payload.password, user_db.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=error_json("Password is incorrect"))
 
     expire_by: datetime = datetime.utcnow() + timedelta(minutes=DEFAULT_ACCESS_TOKEN_EXPIRE_MINUTES)
     user_token_payload = schemas.UserJWTContent(
         iss=os.getenv("JWT_ISSUER"),
         aud=os.getenv("JWT_AUDIENCE"),
-        sub=db_user.name,
+        sub=user_db.name,
         exp=expire_by,
     )
     return schemas.UserJWTPayload(

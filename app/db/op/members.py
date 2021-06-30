@@ -3,14 +3,11 @@ from fastapi import HTTPException, status
 
 from app.db import models
 from app.util.json_response import error_json
+from app.db import op
 
 def get_all_members_by_board_id(board_id: int, session: Session)\
         -> list[models.Member]:
-    db_board:models.Board = session.query(models.Board)\
-        .filter(models.Board.id==board_id)\
-        .first()
-    if db_board is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_json("Resource not found"))
+    db_board:models.Board = op.boards.get_board_by_id(board_id, session)
     db_members = db_board.members
     return db_members
 

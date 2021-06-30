@@ -7,7 +7,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True, index=True)
     hashed_password =Column(String)
-    permissions = relationship("Permission", back_populates="users",  cascade="all, delete-orphan")
+    permissions: list = relationship("Permission", back_populates="users",  cascade="all, delete-orphan")
 
 class Permission(Base):
     """
@@ -19,17 +19,16 @@ class Permission(Base):
     user_id = Column(Integer, ForeignKey("User.id"))
     board_id = Column(Integer, ForeignKey("Board.id"))
     is_owner = Column(Boolean)
-    users = relationship("User", back_populates="permissions")
-    boards = relationship("Board", back_populates="permissions")
+    users: list = relationship("User", back_populates="permissions")
+    boards: list = relationship("Board", back_populates="permissions")
 
 class Board(Base):
     __tablename__ = "Board"
     id = Column(Integer, primary_key=True, index=True)
-    access_key = Column(String)
     name = Column(String, index=True)
-    members = relationship("Member", back_populates="board", cascade="all, delete-orphan")
-    entries = relationship("Entry", back_populates="board", cascade="all, delete-orphan")
-    permissions = relationship("Permission", back_populates="boards",  cascade="all, delete-orphan")
+    members: list = relationship("Member", back_populates="board", cascade="all, delete-orphan")
+    entries: list = relationship("Entry", back_populates="board", cascade="all, delete-orphan")
+    permissions: list = relationship("Permission", back_populates="boards",  cascade="all, delete-orphan")
 
 class Member(Base):
     __tablename__ = "Member"
@@ -37,7 +36,7 @@ class Member(Base):
     board_id = Column(Integer, ForeignKey("Board.id"))
     name = Column(String)
     board = relationship("Board", back_populates="members")
-    transactions = relationship("Transaction", back_populates="member", cascade="all, delete-orphan")
+    transactions: list = relationship("Transaction", back_populates="member", cascade="all, delete-orphan")
 
 class Entry(Base):
     __tablename__ = "Entry"
@@ -45,7 +44,7 @@ class Entry(Base):
     board_id = Column(Integer, ForeignKey("Board.id"))
     name = Column(String)
     board = relationship("Board", back_populates="entries")
-    transactions = relationship("Transaction", back_populates="entry", cascade="all, delete-orphan")
+    transactions: list = relationship("Transaction", back_populates="entry", cascade="all, delete-orphan")
 
 class Transaction(Base):
     """

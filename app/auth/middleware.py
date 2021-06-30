@@ -9,9 +9,10 @@ from app.routers.consts import API_ROOT_PATH, USER_ENDPOINT_PATH, TOKEN_ENDPOINT
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=API_ROOT_PATH + USER_ENDPOINT_PATH + TOKEN_ENDPOINT_PATH)
 
-def get_user(token: str = Depends(oauth2_scheme), session: Session=Depends(get_session)):
+def get_user(token: str = Depends(oauth2_scheme), session: Session=Depends(get_session))\
+        -> models.User:
+    print("Pass")
     jwt_content:schemas.UserJWTContent = auth_util.decode_access_jwt(token)
-    print(jwt_content)
     username = jwt_content.sub
     user: models.User = session.query(models.User).filter(models.User.name==username).first()
     return user
