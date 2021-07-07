@@ -3,10 +3,10 @@ from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi import status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
-from app.auth.middleware import get_user
+from app.auth.middleware import verify_access_token
 from app.db.middleware import get_session
 from app.db import schemas
 from app.db import models
@@ -35,7 +35,7 @@ def signup(payload: schemas.UserSignupPayload, session: Session=Depends(get_sess
     session.refresh(user_db)
     return user_db
 
-@router.post(TOKEN_ENDPOINT_PATH, response_model=schemas.LoginSuccessJWTPayload)
+@router.post(TOKEN_ENDPOINT_PATH, response_model=schemas.AuthorizedUserJWTPayload)
 def login(payload: OAuth2PasswordRequestForm = Depends(), session: Session=Depends(get_session)):
     user_db: models.User = op.users.get_user_by_name(payload.username, session)
     if not auth_util.is_valid_password(payload.password, user_db.hashed_password):
@@ -48,13 +48,13 @@ def login(payload: OAuth2PasswordRequestForm = Depends(), session: Session=Depen
         sub=user_db.name,
         exp=expire_by,
     )
-    return schemas.LoginSuccessJWTPayload(
+    return schemas.AuthorizedUserJWTPayload(
         id=user_db.id,
         name=user_db.name,
         access_token=auth_util.create_access_jwt(user_token_payload),
         token_type="bearer"
     )
 
-@router.get("/test")
-def test_auth_access(user: str = Depends(get_user)):
-    return user
+@router.get("/check-auth")
+def check_auth_token(is_valid: str = Depends(verify_access_token)):
+    return schemas.AuthTokenValidity(valid=is_valid)

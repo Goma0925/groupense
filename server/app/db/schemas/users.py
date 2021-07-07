@@ -19,7 +19,10 @@ class UserJWTContent(BaseModel):
     sub: str
     exp: datetime
 
-class LoginSuccessJWTPayload(User):
+class AuthorizedUserJWTPayload(User):
     access_token: str
     token_type: str
 
+class AuthTokenValidity(BaseModel):
+    valid: bool
+    

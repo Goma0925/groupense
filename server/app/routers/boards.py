@@ -15,7 +15,7 @@ router = APIRouter(
     responses={404: {"description": "Resource not found"}}
 )
 
-@router.get("/", response_model=list[schemas.Board])
+@router.get("", response_model=list[schemas.Board])
 def get_all_boards(
         user: models.User=Depends(get_user),
         session: Session=Depends(get_session),
