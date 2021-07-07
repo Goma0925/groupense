@@ -19,7 +19,7 @@ class UserJWTContent(BaseModel):
     sub: str
     exp: datetime
 
-class UserJWTPayload(BaseModel):
+class LoginSuccessJWTPayload(User):
     access_token: str
     token_type: str
 

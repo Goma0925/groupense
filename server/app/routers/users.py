@@ -35,7 +35,7 @@ def signup(payload: schemas.UserSignupPayload, session: Session=Depends(get_sess
     session.refresh(user_db)
     return user_db
 
-@router.post(TOKEN_ENDPOINT_PATH, response_model=schemas.UserJWTPayload)
+@router.post(TOKEN_ENDPOINT_PATH, response_model=schemas.LoginSuccessJWTPayload)
 def login(payload: OAuth2PasswordRequestForm = Depends(), session: Session=Depends(get_session)):
     user_db: models.User = op.users.get_user_by_name(payload.username, session)
     if not auth_util.is_valid_password(payload.password, user_db.hashed_password):
@@ -48,7 +48,9 @@ def login(payload: OAuth2PasswordRequestForm = Depends(), session: Session=Depen
         sub=user_db.name,
         exp=expire_by,
     )
-    return schemas.UserJWTPayload(
+    return schemas.LoginSuccessJWTPayload(
+        id=user_db.id,
+        name=user_db.name,
         access_token=auth_util.create_access_jwt(user_token_payload),
         token_type="bearer"
     )
