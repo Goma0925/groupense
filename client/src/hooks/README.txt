@@ -1,0 +1,1 @@
+This directory stores custom hooks used across the entire application.

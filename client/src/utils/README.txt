@@ -1,0 +1,1 @@
+This directory stores helper function and modules used across the entire application.

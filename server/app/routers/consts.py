@@ -1,0 +1,3 @@
+API_ROOT_PATH = "/api"
+TOKEN_ENDPOINT_PATH = "/login"
+USER_ENDPOINT_PATH = "/users"
