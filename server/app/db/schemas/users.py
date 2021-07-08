@@ -17,11 +17,13 @@ class UserJWTContent(BaseModel):
     iss: str
     aud: str
     sub: str
+    user_id: str
     exp: datetime
 
 class AuthorizedUserJWTPayload(User):
-    access_token: str
-    token_type: str
+    access_token: str # Required by FASTAPI
+    token_type: str # Required by FASTAPI
+    refresh_token: str 
 
 class AuthTokenValidity(BaseModel):
     valid: bool

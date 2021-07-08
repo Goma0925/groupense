@@ -5,8 +5,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi import status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
+from sqlalchemy.sql.functions import user
 
-from app.auth.middleware import verify_access_token
+from app.auth.middleware import verify_refresh_token
+from app.consts import ACCESS_JWT_SECRET_KEY, DEFAULT_ACCESS_TOKEN_EXPIRE_MINUTES, DEFAULT_REFRESH_TOKEN_EXPIRE_MINUTES, REFRESH_JWT_SECRET_KEY
 from app.db.middleware import get_session
 from app.db import schemas
 from app.db import models
@@ -20,8 +22,6 @@ router = APIRouter(
     tags=["users"],
     responses={404: {"description": "Resource not found"}}
 )
-
-DEFAULT_ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("DEFAULT_ACCESS_TOKEN_EXPIRE_MINUTES"))
 
 @router.post("/signup", response_model=schemas.User)
 def signup(payload: schemas.UserSignupPayload, session: Session=Depends(get_session)):
@@ -40,21 +40,20 @@ def login(payload: OAuth2PasswordRequestForm = Depends(), session: Session=Depen
     user_db: models.User = op.users.get_user_by_name(payload.username, session)
     if not auth_util.is_valid_password(payload.password, user_db.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=error_json("Password is incorrect"))
-
-    expire_by: datetime = datetime.utcnow() + timedelta(minutes=DEFAULT_ACCESS_TOKEN_EXPIRE_MINUTES)
-    user_token_payload = schemas.UserJWTContent(
-        iss=os.getenv("JWT_ISSUER"),
-        aud=os.getenv("JWT_AUDIENCE"),
-        sub=user_db.name,
-        exp=expire_by,
-    )
     return schemas.AuthorizedUserJWTPayload(
         id=user_db.id,
         name=user_db.name,
-        access_token=auth_util.create_access_jwt(user_token_payload),
-        token_type="bearer"
+        access_token=auth_util.create_user_jwt(user_db.name, user_db.id, ACCESS_JWT_SECRET_KEY, DEFAULT_ACCESS_TOKEN_EXPIRE_MINUTES),
+        token_type="bearer",
+        refresh_token=auth_util.create_user_jwt(user_db.name, user_db.id, REFRESH_JWT_SECRET_KEY, DEFAULT_REFRESH_TOKEN_EXPIRE_MINUTES),
     )
 
-@router.get("/check-auth")
-def check_auth_token(is_valid: str = Depends(verify_access_token)):
-    return schemas.AuthTokenValidity(valid=is_valid)
+@router.get("/refresh-auth-token")
+def refresh_access_token(user: schemas.User = Depends(verify_refresh_token)):
+    return schemas.AuthorizedUserJWTPayload(
+        id=user.id,
+        name=user.name,
+        access_token=auth_util.create_user_jwt(user.name, user.id, ACCESS_JWT_SECRET_KEY, DEFAULT_ACCESS_TOKEN_EXPIRE_MINUTES),
+        token_type="bearer",
+        refresh_token=auth_util.create_user_jwt(user.name, REFRESH_JWT_SECRET_KEY, DEFAULT_REFRESH_TOKEN_EXPIRE_MINUTES),
+    )
