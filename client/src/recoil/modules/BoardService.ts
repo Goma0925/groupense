@@ -4,8 +4,8 @@ import { Board } from "../models";
 import { useCallback } from "react";
 
 const states = {
-    allBoardsById: atom<{[id: string]: Board}>({
-        key: "allBoardsByIdState",
+    boardsById: atom<{[id: string]: Board}>({
+        key: "boardsByIdState",
         default: {},
     }),
 
@@ -13,7 +13,7 @@ const states = {
     sortedBoards: selector({
         key: "sortedBoardState",
         get: ({get})=> {
-            const boardById = get(states.allBoardsById);
+            const boardById = get(states.boardsById);
             const sortedBoards: Board[] = [];
             for (let id in boardById){
                 sortedBoards.push(boardById[id]);
@@ -28,7 +28,8 @@ const states = {
         }
     }),
 
-    isBoardFetched: atom<boolean>({
+    // Signifies that all the boards have been loaded (excluding their content data).
+    boardPreviewReady: atom<boolean>({
         key: "boardLoadingState",
         default: false,
     }),
@@ -40,53 +41,74 @@ const states = {
     })
 }
 
-axios.defaults.baseURL = "http://127.0.0.1:8000/api";
 const hooks = {
     useFetchAllBoards: () => {
         const fetchAllBoards = useRecoilCallback(({set}) => ()=> {
-            // const releaseSnapshot = snapshot.retain();
             axios.get("/boards")
             .then((res: AxiosResponse<Board[]>) => {
-                console.log("Fetched:", res.data);
-                
                 const boards = res.data;
                 const boardById: {[id: string]: Board} = {};
                 boards.map(board => {
                     boardById[board.id] = board;
-                })
-                console.log("boardById:", boardById);
-                
-                set(states.allBoardsById, boardById);
-                set(states.isBoardFetched, true);
-                // setTimeout(() => {}, 10000);
-                // console.log("After update:", snapshot.getLoadable(allBoardsByIdState).valueOrThrow());
-                // releaseSnapshot();
-            }).catch((err)=>{
-                throw err;
-            })
+                })                
+                set(states.boardsById, boardById);
+                set(states.boardPreviewReady, true);
+            }).catch((err)=>{throw err});
         }, []);
         return fetchAllBoards;
     },
 
+    useCreateboard: ()=>{
+        const createBoard = useRecoilCallback(
+            ({snapshot, set})=>(
+                payload: Omit<Board, "id">
+            )=>{
+                return axios.post("/boards", payload)
+                .then((res: AxiosResponse<Board>) => {
+                    const createdBoard = res.data;
+                    const boardsById: {[id: string]: Board} = snapshot.getLoadable(states.boardsById).contents;
+                    const newBoardsById = Object.assign({
+                        [createdBoard.id]: createdBoard
+                    }, boardsById);
+                    set(states.boardsById, newBoardsById);
+                }).catch(err=>{throw err});
+        })
+        return createBoard;
+    },
+
     useUpdateBoard: ()=>{
-        const setAllBoardByIdState = useSetRecoilState(states.allBoardsById);
         const updateBoard = useRecoilCallback(
-            ({snapshot})=>(
+            ({snapshot, set})=>(
                 boardId: string,
                 payload: Omit<Board, "id">
             )=> {
                 axios.put("boards/"+boardId, payload)
                     .then(async (res: AxiosResponse<Board>) => {
                         // Get the current board state
-                        const boardById = snapshot.getLoadable(states.allBoardsById).contents;
+                        const boardById = snapshot.getLoadable(states.boardsById).contents;
                         const newBoardById = Object.assign({}, boardById);
                         newBoardById[boardId] = res.data;
-                        setAllBoardByIdState(newBoardById);
-                    }).catch((err)=>{
-                        throw err;
-                    })
-        }, [setAllBoardByIdState]);
+                        set(states.boardsById, newBoardById);
+                    }).catch((err)=>{throw err});
+        }, []);
         return updateBoard;
+    },
+
+    useDeleteBoard: ()=>{
+        const deleteBoard = useRecoilCallback(
+            ({snapshot, set})=>(
+                boardId: string
+            )=>{
+                axios.delete("boards/"+boardId)
+                    .then(async (res: AxiosResponse<Board>) => {
+                        const boardById = snapshot.getLoadable(states.boardsById).contents;
+                        const newBoardsById = Object.assign({}, boardById);
+                        delete newBoardsById[boardId];
+                        set(states.boardsById, newBoardsById);
+                    }).catch((err)=>{throw err});
+            }
+        )
+        return deleteBoard;
     }
 }
 

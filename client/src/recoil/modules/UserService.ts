@@ -1,18 +1,20 @@
-import axios, { AxiosResponse } from "axios";
-import { log } from "console";
+import axios, { AxiosError, AxiosResponse } from "axios";
 import { useCallback } from "react";
-import { atom, useSetRecoilState } from "recoil";
+import { atom, useRecoilCallback, useSetRecoilState } from "recoil";
+import CONSTS from "../../const";
 import { User } from "../models";
 
-export const loginState = atom<boolean>({
-    key: "loginState",
-    default: false,
-});
-
-export const userState = atom<User>({
-    key: "userState",
-    default: { name: "Unknown User", id: "-1" },
-})
+const states = {
+    isLoggedIn: atom<boolean>({
+        key: "loginState",
+        default: false,
+    }),
+    
+    user: atom<User>({
+        key: "userState",
+        default: { name: "Unknown User", id: "-1" },
+    })
+}
 
 // Types for login operations
 type UserAuthPayload = {
@@ -20,60 +22,83 @@ type UserAuthPayload = {
     password: string;
 }
 type LoginResponse = User & {
+    id: string,
+    name: string
     access_token: string;
     token_type: string;
 }
 
-export const userService = {
-    useFetchLoginState: ()=>{
-        const setLoginState = useSetRecoilState(loginState);
-        const fetchLoginState = useCallback(()=>{
-            axios.get("http://127.0.0.1:8000/api/users/check-auth")
-                .then((res: AxiosResponse)=>{
-                    setLoginState(true);
-                    console.log("Token auth:", res.data);
+const hooks = {
+    useLoginWithRefreshToken: ()=>{
+        const loginWithRefreshToken = useRecoilCallback(
+            ({set})=>()=>{
+            return axios.get("/users/refresh-auth-token")
+                .then((res: AxiosResponse<User>)=>{
+                    set(states.isLoggedIn, true);
+                    set(states.user, {
+                        name: res.data.name,
+                        id: res.data.id,
+                    });
                 }).catch((err)=>{
-                    console.error("No valid token.\n", err.response.data);
-                    setLoginState(false);
+                    set(states.isLoggedIn, false);
+                    throw err;
                 })
-            }, [loginState]);
-        return fetchLoginState;
+            }, []);
+        return loginWithRefreshToken;
     },
 
     useLogin: ()=>{
-        const setLoginState = useSetRecoilState(loginState);
-        const setUserState = useSetRecoilState(userState);
-        const login = useCallback(async (payload: UserAuthPayload)=>{            
-            axios.post("http://127.0.0.1:8000/api/users/login", new URLSearchParams(payload))
-                .then(async (res:AxiosResponse<LoginResponse>) => {
-                    axios.defaults.headers.common["Authorization"] = `Bearer ${res.data.access_token}`;
-                    setUserState({
-                        name: res.data.name,
-                        id: res.data.id,
+        const login = useRecoilCallback(
+            ({set})=>
+            async (payload: UserAuthPayload)=>{            
+                return axios.post("/users/login", new URLSearchParams(payload))
+                    .then(async (res:AxiosResponse<LoginResponse>) => {
+                        axios.defaults.headers.common["Authorization"] = `Bearer ${res.data.access_token}`;
+                        set(
+                            states.user,
+                            {
+                                name: res.data.name,
+                                id: res.data.id,
+                            }
+                        )
+                        set(states.isLoggedIn, true);
+                    }).catch((err: AxiosError)=>{
+                        set(states.isLoggedIn, false);
+                        throw err;
                     })
-                    setLoginState(true);
-                }).catch((err)=>{
-                    console.error("Login failed\n", err.response.data);
-                    setLoginState(false);
-                })
-        }, [setLoginState])
+        }, [])
         return login;
+    },
+
+    useLogout: ()=>{
+        const logout = useCallback(()=>{
+            axios.post("/users/logout")
+                .then(()=>{
+                    window.location.replace(CONSTS.APP_URL);
+                })
+                .catch((err)=>{throw err});
+        }, []);
+        return logout;
     },
 
     useSignupToLogin: ()=>{
         // Sign up a user and login successively.
-        const login = userService.useLogin();
+        const login = hooks.useLogin();
         const signup = async (payload: UserAuthPayload)=>{
-            console.log("Payload", payload);
-            axios.post("http://127.0.0.1:8000/api/users/signup", payload)
+            return axios.post("/users/signup", payload)
                 .then(async (res:AxiosResponse<User>) => {
                     login(payload);
                 }).catch((err)=>{
-                    console.error("Signup failed\n", err.response.data);
                     throw err;
             })
         }
         return signup;
     }
 }
+
+export default {
+    hooks:hooks,
+    states:states,
+}
+
 
