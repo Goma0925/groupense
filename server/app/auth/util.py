@@ -25,11 +25,7 @@ def create_user_jwt(username: str, user_id:str, secret_key: str, expire_minutes:
         exp=expire_by,
         user_id=user_id
     )
-    # Test
     token = jwt.encode(access_token_payload.dict(), secret_key, algorithm=TOKEN_ALGORITHM)
-    payload: dict = jwt.decode(token, secret_key, audience=jwt_audience, algorithms=[TOKEN_ALGORITHM])
-    print(payload)
-    # Test end
     return token
 
 def decode_user_jwt(token: str, secret_key: str) -> schemas.UserJWTContent:
