@@ -13,5 +13,4 @@ class TransactionCreatePayloadWithMember(BaseModel):
     amount: float
 
 class TransactionUpdatePayload(BaseModel):
-    name: str
-
+    amount: float

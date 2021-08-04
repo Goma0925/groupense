@@ -23,6 +23,16 @@ def get_all_transactions(
     entry_db: models.Entry = op.entries.get_entry_by_ids(board_id, entry_id, session)
     return entry_db.transactions
 
+@router.put("/boards/{board_id}/entries/{entry_id}/transactions/{transaction_id}", response_model=schemas.Transaction)
+def update_transaction(
+        board_id: int, entry_id: int, transaction_id:int, payload: schemas.TransactionUpdatePayload,
+        user: models.User=Depends(get_user),
+        session:Session=Depends(get_session)
+    ) -> models.Transaction:
+    op.permissions.check_authorization_by_board_id(board_id, user.id, session)
+    transaction_db = models.Entry = op.transactions.update_transaction_by_ids(transaction_id, payload, session)
+    return transaction_db
+
 @router.post("/boards/{board_id}/entries/{entry_id}/transactions", response_model=schemas.Transaction)
 def create_transaction(
         board_id: int, entry_id:int,
@@ -32,15 +42,15 @@ def create_transaction(
     op.permissions.check_authorization_by_board_id(board_id, user.id, session)
     # Check the parent resources are valid
     entry_db:models.Entry = op.entries.get_entry_by_ids(board_id, entry_id, session)
-    db_member:models.Member = op.members.get_member_by_ids(board_id, payload.member_id, session)
+    member_db:models.Member = op.members.get_member_by_ids(board_id, payload.member_id, session)
     # Create a transaction
-    db_transaction: models.Transaction = op.transactions.create_transaction_by_ids(
+    transaction_db: models.Transaction = op.transactions.create_transaction_by_ids(
         entry_id=entry_db.id,
-        member_id=db_member.id,
+        member_id=member_db.id,
         amount=payload.amount,
         session=session
     )
-    return db_transaction
+    return transaction_db
 
 @router.delete("/boards/{board_id}/entries/{entry_id}/transactions/{transaction_id}")
 def delete_transaction(
