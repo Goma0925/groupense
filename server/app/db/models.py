@@ -1,5 +1,6 @@
 from sqlalchemy import Numeric, Column, ForeignKey, Integer, String, Boolean
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql.sqltypes import DECIMAL
 from .database import Base
 
 class User(Base):
@@ -55,6 +56,6 @@ class Transaction(Base):
     id = Column(Integer, primary_key=True, index=True)
     entry_id = Column(Integer, ForeignKey("Entry.id"))
     member_id = Column(Integer, ForeignKey("Member.id"))
-    amount = Column(Numeric)
+    amount = Column(DECIMAL(15, 2))
     entry = relationship("Entry", back_populates="transactions")
     member = relationship("Member", back_populates="transactions")
