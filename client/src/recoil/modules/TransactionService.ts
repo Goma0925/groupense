@@ -2,15 +2,16 @@ import axios, { AxiosResponse } from "axios";
 import { atom, atomFamily, RecoilState, RecoilValueReadOnly, selector, selectorFamily, useRecoilCallback } from "recoil";
 import { Transaction } from "../models";
 
+type TransactionCompoundKey = {memberId: string, entryId: string};
 const states = {
-    transactionsByCompoundId: atomFamily({
+    transactionsByKey: atomFamily({
         key: "transactionByIds",
-        default: (keys: {memberId: string, entryId: string}) => {return {} as Transaction}
+        default: (keys: TransactionCompoundKey) => {return {} as Transaction}
     }),
 
-    transactionCompoundIds: atom({
+    transactionKeys: atom({
         key: "transactionCompoundIds",
-        default: [] as {memberId: string, entryId: string}[]
+        default: [] as TransactionCompoundKey[]
     })
 }
 
@@ -23,14 +24,14 @@ const hooks = {
             )=>{
                 axios.get("/boards/"+boardId+"/entries/"+entryId+"/transactions")
                     .then(((res:AxiosResponse<Transaction>)=>{
-                        const transactionCompoundIds = snapshot.getLoadable(states.transactionCompoundIds).getValue();
+                        const transactionKeys = snapshot.getLoadable(states.transactionKeys).getValue();
                         const newSnapshot = snapshot.map(({set})=>{
-                            const compoundId = {
+                            const compoundKey = {
                                 memberId: res.data.member_id,
                                 entryId: res.data.entry_id,
                             };
-                            set(states.transactionsByCompoundId(compoundId), res.data);
-                            set(states.transactionCompoundIds, [...transactionCompoundIds, ...[compoundId]]);
+                            set(states.transactionsByKey(compoundKey), res.data);
+                            set(states.transactionKeys, [...transactionKeys, ...[compoundKey]]);
                         })
                         gotoSnapshot(newSnapshot);
                     })).catch((err)=>{throw err});
