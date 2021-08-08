@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { RecoilRoot, useRecoilValue } from "recoil";
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
-import { getByTitleAsJson } from "./utils/helpers";
+import { renderRecoilValues } from "./utils/helpers";
 import UserService from "../modules/UserService";
 import CONSTS from "../../const";
 import { User } from "../models";
@@ -35,25 +35,20 @@ describe("UserService hook tests", ()=>{
                 "refresh_token": "Sent in HTTPOnly cookie"
             });
 
-            function TestComponent(){
+            const [isLoggedIn, user] = await renderRecoilValues(()=>{
                 const isLoggedIn = useRecoilValue(UserService.states.isLoggedIn);
                 const user = useRecoilValue(UserService.states.user);
                 const login = UserService.hooks.useLogin();
                 useEffect(()=>{
                     login(testUser);
                 }, []);
-                return (<>
-                    <div title="isLoggedIn">{JSON.stringify({value: isLoggedIn})}</div>
-                    <div title="user">{JSON.stringify(user)}</div>
-                </>)
-            }
+                return [isLoggedIn, user]
+            });
 
             // Check user data is properly loaded.
-            const user = await getByTitleAsJson<User>("user", <RecoilRoot><TestComponent/></RecoilRoot>);
             expect(user).toEqual({name: testUser.username, id: testUserId});
             // Check isLoggedin is turned to true.
-            const isLoggedIn = await getByTitleAsJson<{[value: string]: boolean}>("isLoggedIn", <RecoilRoot><TestComponent/></RecoilRoot>);
-            expect(isLoggedIn.value).toBe(true);
+            expect(isLoggedIn).toBe(true);
             // Check if axios header has the access token. 
             expect(axios.defaults.headers.common["Authorization"]).toEqual("Bearer "+accessToken);
         }
@@ -95,23 +90,16 @@ describe("UserService hook tests", ()=>{
                     "refresh_token": "Sent in HTTPOnly cookie"
                 }
             )
-            function TestComponent(){
+            const [isLoggedIn, user] = await renderRecoilValues(()=>{
                 const isLoggedIn = useRecoilValue(UserService.states.isLoggedIn);
                 const user = useRecoilValue(UserService.states.user);
                 const loginWithRefreshToken = UserService.hooks.useLoginWithRefreshToken();
                 useEffect(()=>{
                     loginWithRefreshToken();
                 }, []);
-                return (
-                    <>
-                        <div title="isLoggedIn">{JSON.stringify({value: isLoggedIn})}</div>
-                        <div title="user">{JSON.stringify(user)}</div>
-                    </>
-                )
-            }
-            const isLoggedIn = await getByTitleAsJson<{[value: string]: boolean}>("isLoggedIn", <RecoilRoot><TestComponent/></RecoilRoot>);
-            const user = await getByTitleAsJson<User>("user", <RecoilRoot><TestComponent/></RecoilRoot>);
-            expect(isLoggedIn.value).toBe(true);
+                return [isLoggedIn, user];
+            });
+            expect(isLoggedIn).toBe(true);
             expect(user).toEqual(expectedUser);
         }
     )
@@ -134,25 +122,20 @@ describe("UserService hook tests", ()=>{
                 "name": testUserPayload.username,
             });
 
-            function TestComponent(){
+            const [isLoggedIn, user] = await renderRecoilValues(()=>{
                 const isLoggedIn = useRecoilValue(UserService.states.isLoggedIn);
                 const user = useRecoilValue(UserService.states.user);
                 const signupToLogin = UserService.hooks.useSignupToLogin();
                 useEffect(()=>{
                     signupToLogin(testUserPayload);
                 }, []);
-                return (<>
-                    <div title="isLoggedIn">{JSON.stringify({value: isLoggedIn})}</div>
-                    <div title="user">{JSON.stringify(user)}</div>
-                </>)
-            }
+                return [isLoggedIn, user];
+            });
 
             // Check user data is properly loaded.
-            const user = await getByTitleAsJson<User>("user", <RecoilRoot><TestComponent/></RecoilRoot>);
             expect(user).toEqual({name: testUserPayload.username, id: testUserId});
             // Check isLoggedin is turned to true.
-            const isLoggedIn = await getByTitleAsJson<{[value: string]: boolean}>("isLoggedIn", <RecoilRoot><TestComponent/></RecoilRoot>);
-            expect(isLoggedIn.value).toBe(true);
+            expect(isLoggedIn).toBe(true);
             // Check if axios header has the access token. 
             expect(axios.defaults.headers.common["Authorization"]).toEqual("Bearer "+accessToken);
         }

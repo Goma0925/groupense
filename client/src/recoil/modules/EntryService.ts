@@ -36,19 +36,16 @@ const hooks = {
 
     useCreateEntry: ()=>{
         const createEntry = useRecoilCallback(
-            ({set, snapshot, gotoSnapshot}) => (
+            ({set}) => (
                 entry: Omit<Entry, "id">
             ) => {
                 axios.post("/boards/"+entry.board_id+"/entries", entry)
-                    .then(async (res: AxiosResponse<Entry>) => {
+                    .then((res: AxiosResponse<Entry>) => {
                         // Do not use snapshot update here, because it will cause
-                        // inconsistency in entryIds when running multiple create operations
-                        // at once.
+                        // inconsistency in the array of entryIds 
+                        // when running multiple create operations at once.
                         set(states.entriesById(res.data.id), res.data);
-                        set(states.entryIds, (prevEntryIds)=>{
-                            console.log("prevEntryIds", prevEntryIds)
-                            return prevEntryIds.concat([res.data.id])
-                        });
+                        set(states.entryIds, (prevEntryIds)=>prevEntryIds.concat([res.data.id]));
                     }).catch(err => {throw err});
             })
         return createEntry;
@@ -58,11 +55,13 @@ const hooks = {
         const updateEntryById = useRecoilCallback(
             ({set, snapshot})=>(
                 entryId: string,
-                payload: Omit<Entry, "id">
+                payload: Omit<Entry, "id"|"board_id">
             )=>{
-                const entry = snapshot.getLoadable(states.entriesById(entryId)).getValue();
-                return axios.post("/boards/"+entry.board_id+"/entries"+entryId, payload)
+                const boardId = snapshot.getLoadable(states.entriesById(entryId)).getValue().board_id;
+                if (boardId === undefined){throw new Error(`Entry with ID ${entryId} not found.`)};
+                return axios.post("/boards/"+boardId+"/entries/"+entryId, payload)
                     .then((res: AxiosResponse<Entry>)=>{
+                        console.log("res.data", res.data);
                         set(states.entriesById(res.data.id), res.data);
                     });
             }, []);

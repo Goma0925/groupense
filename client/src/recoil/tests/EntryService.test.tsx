@@ -75,6 +75,32 @@ describe("EntryService hook tests", ()=>{
         }
     )
 
+    test(EntryService.hooks.useUpdateEntry.name+" should update a entry by ID and reflect the change in atoms",
+        async()=>{
+            const targetEntryId = "1";
+            const originalEntry:Entry = {id: targetEntryId, board_id: "1", name: "Origianl name"}
+            const updatePayload: Omit<Entry, "id"|"board_id"> = {name: "New name"}
+            const entryAfterUpdate: Entry = {id: targetEntryId, board_id: originalEntry.board_id,
+                                     name: updatePayload.name};
+            mockAPI.onPost("/boards/"+originalEntry.board_id + "/entries/"+targetEntryId)
+                    .replyOnce(200, entryAfterUpdate);
+
+            // When calling updateEntry with ID that does not exist in Recoil, throw an error.
+            try{
+                await renderRecoilValues(()=>{
+                    const updateEntry = EntryService.hooks.useUpdateEntry();
+                    useEffect(()=>{
+                        updateEntry("Invalid ID", updatePayload);
+                    }, [])
+                    return [];
+                })
+                throw new Error("Expected an error to be thrown when updating an entry that does not exist.")
+            } catch(e){
+                expect(e).toThrow(Error);
+            }
+         }
+    )
+
     test.todo(EntryService.hooks.useUpdateEntry.name+" should update a entry by ID and reflect the change in atoms")
 
     test.todo(EntryService.hooks.useDeleteEntry.name+" should delete a entry by ID and reflect the change in atoms")
