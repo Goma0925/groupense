@@ -82,8 +82,8 @@ const hooks = {
             )=>{
                 return axios.delete("boards/"+boardId)
                     .then(() => {
-                        reset(states.boardsById(boardId));
                         set(states.boardIds, (prevBoardIds)=>prevBoardIds.filter(id=>id!==boardId));
+                        reset(states.boardsById(boardId));
                     }).catch((err)=>{throw err});
         },[])
         return deleteBoard;
