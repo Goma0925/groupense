@@ -4,7 +4,7 @@ import BoardService from "../modules/BoardService";
 import { RecoilRoot,RecoilState,useRecoilState,useRecoilValue } from "recoil";
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
-import { getByTitleAsJson, getByTitlesAsJson, renderRecoilValues } from "./utils/helpers";
+import { renderRecoilValues } from "./utils/helpers";
 import EntryService from "../modules/EntryService";
 
 let mockEntries: Entry[];
@@ -67,7 +67,6 @@ describe("EntryService hook tests", ()=>{
                     createEntry({board_id: newEntry1.board_id, name: newEntry1.name});
                     createEntry({board_id: newEntry2.board_id, name: newEntry2.name})
                 }, [])
-                console.log("In component:", JSON.stringify(entries), "\n", entryIds);
                 return [entries, entryIds]
             })
             expect(renderedEntries).toEqual([newEntry1, newEntry2]);
@@ -86,22 +85,60 @@ describe("EntryService hook tests", ()=>{
                     .replyOnce(200, entryAfterUpdate);
 
             // When calling updateEntry with ID that does not exist in Recoil, throw an error.
-            try{
-                await renderRecoilValues(()=>{
-                    const updateEntry = EntryService.hooks.useUpdateEntry();
-                    useEffect(()=>{
-                        updateEntry("Invalid ID", updatePayload);
-                    }, [])
-                    return [];
-                })
-                throw new Error("Expected an error to be thrown when updating an entry that does not exist.")
-            } catch(e){
-                expect(e).toThrow(Error);
-            }
+            const [entry] = await renderRecoilValues(()=>{
+                const updateEntry = EntryService.hooks.useUpdateEntry();
+                const [entry, setEntry] = useRecoilState(EntryService.states.entriesById(targetEntryId));
+                const [setupDone, setSetupDone] = useState(false);
+
+                useEffect(()=>{
+                    // Setup the atoms so that the target entry is in the atoms.
+                    setEntry(originalEntry);
+                    setSetupDone(true);
+                }, []);
+                useEffect(()=>{
+                    if (setupDone){
+                        updateEntry(originalEntry.id, updatePayload);
+                    }
+                }, [setupDone])
+                return [entry];
+            });
+            expect(entry).toEqual(entryAfterUpdate);
          }
     )
 
-    test.todo(EntryService.hooks.useUpdateEntry.name+" should update a entry by ID and reflect the change in atoms")
+    test(EntryService.hooks.useDeleteEntry.name+" should delete a entry by ID and reflect the change in atoms",
+        async()=>{
+            const entryToDelete:Entry = {id: "1", board_id:"1", name: "EntryToDelete"}
+            const entryToKeep:Entry = {id: "2", board_id:"1", name: "EntryToKeep"}
+            mockAPI.onDelete("/boards/"+entryToDelete.board_id+"/entries/"+entryToDelete.id)
+                    .replyOnce(200);
 
-    test.todo(EntryService.hooks.useDeleteEntry.name+" should delete a entry by ID and reflect the change in atoms")
+            const [renderedEntryToDelete, renderedEntryToKeep, renderedEntryIds] = await renderRecoilValues(()=>{
+                const deleteEntry = EntryService.hooks.useDeleteEntry();
+                const [_entryToDelete, _setEntryToDelete] = useRecoilState(EntryService.states.entriesById(entryToDelete.id));
+                const [_entryToKeep, _setEntryToKeep] = useRecoilState(EntryService.states.entriesById(entryToKeep.id));
+                const [_entryIds, _setEntryIds] = useRecoilState(EntryService.states.entryIds);
+                const [_doneSetup, _setDoneSetup] = useState(false);
+                useEffect(()=>{
+                    // Setup the atoms so that the target entry is in the atoms.
+                    _setEntryToDelete(entryToDelete);
+                    _setEntryToKeep(entryToKeep);
+                    _setEntryIds([entryToDelete.id, entryToKeep.id]);
+                    _setDoneSetup(true);
+                }, []);
+                useEffect(()=>{
+                    if (_doneSetup){
+                        deleteEntry(entryToDelete.id);
+                    }
+                }, [_doneSetup]);
+                return [_entryToDelete, _entryToKeep, _entryIds];
+            });
+            expect(renderedEntryToDelete).toEqual({});
+            expect(renderedEntryToKeep).toEqual(entryToKeep);
+            expect(renderedEntryIds).toEqual([entryToKeep.id]);
+        }
+    )
+
+    test.todo(EntryService.hooks.useUpdateEntry.name+" should raise an error when getting an invalid entry ID")
+    test.todo(EntryService.hooks.useDeleteEntry.name+" should raise an error when getting an invalid entry ID")
 })

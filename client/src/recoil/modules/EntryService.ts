@@ -1,5 +1,5 @@
 import axios, { AxiosResponse } from "axios";
-import { atom, atomFamily, RecoilState, RecoilValueReadOnly, selector, useRecoilCallback, useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
+import { atom, atomFamily, useRecoilCallback } from "recoil";
 import { Entry } from "../models";
 
 const states = {
@@ -39,7 +39,7 @@ const hooks = {
             ({set}) => (
                 entry: Omit<Entry, "id">
             ) => {
-                axios.post("/boards/"+entry.board_id+"/entries", entry)
+                return axios.post("/boards/"+entry.board_id+"/entries", entry)
                     .then((res: AxiosResponse<Entry>) => {
                         // Do not use snapshot update here, because it will cause
                         // inconsistency in the array of entryIds 
@@ -61,21 +61,22 @@ const hooks = {
                 if (boardId === undefined){throw new Error(`Entry with ID ${entryId} not found.`)};
                 return axios.post("/boards/"+boardId+"/entries/"+entryId, payload)
                     .then((res: AxiosResponse<Entry>)=>{
-                        console.log("res.data", res.data);
                         set(states.entriesById(res.data.id), res.data);
-                    });
+                    }).catch((err)=>{throw err});
             }, []);
         return updateEntryById;
     },
 
     useDeleteEntry: ()=>{
         return useRecoilCallback(
-            ({reset, snapshot})=>(
+            ({set, reset, snapshot})=>(
                 entryId: string
             )=>{
-                const entry = snapshot.getLoadable(states.entriesById(entryId)).getValue();
-                return axios.delete("/boards/"+entry.board_id+"/entries"+entryId)
-                    .then((res: AxiosResponse<Entry>)=>{
+                const boardId = snapshot.getLoadable(states.entriesById(entryId)).getValue().board_id;
+                if (boardId === undefined){throw new Error(`Entry with ID ${entryId} not found.`)};
+                return axios.delete("/boards/"+boardId+"/entries/"+entryId)
+                    .then(()=>{
+                        set(states.entryIds, (prevEntryIds)=>prevEntryIds.filter((id)=>id !== entryId));
                         reset(states.entriesById(entryId));
                     }).catch((err)=>{throw err});
             }
@@ -88,6 +89,3 @@ export default {
     hooks: hooks,
 }
 
-function useRecoildValue(boardId: any) {
-    throw new Error("Function not implemented.");
-}
