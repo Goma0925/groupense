@@ -44,16 +44,16 @@ const states = {
 const hooks = {
     useFetchAllBoards: () => {
         const fetchAllBoards = useRecoilCallback(({set}) => ()=> {
-            axios.get("/boards")
-            .then((res: AxiosResponse<Board[]>) => {
-                const boards = res.data;
-                const boardById: {[id: string]: Board} = {};
-                boards.map(board => {
-                    boardById[board.id] = board;
-                })                
-                set(states.boardsById, boardById);
-                set(states.boardPreviewReady, true);
-            }).catch((err)=>{throw err});
+            return axios.get("/boards")
+                .then((res: AxiosResponse<Board[]>) => {
+                    const boards = res.data;
+                    const boardById: {[id: string]: Board} = {};
+                    boards.map(board => {
+                        boardById[board.id] = board;
+                    })                
+                    set(states.boardsById, boardById);
+                    set(states.boardPreviewReady, true);
+                }).catch((err)=>{throw err});
         }, []);
         return fetchAllBoards;
     },
@@ -64,15 +64,15 @@ const hooks = {
                 payload: Omit<Board, "id">
             )=>{
                 return axios.post("/boards", payload)
-                .then((res: AxiosResponse<Board>) => {
-                    const createdBoard = res.data;
-                    const boardsById: {[id: string]: Board} = snapshot.getLoadable(states.boardsById).contents;
-                    const newBoardsById = Object.assign({
-                        [createdBoard.id]: createdBoard
-                    }, boardsById);
-                    set(states.boardsById, newBoardsById);
-                }).catch(err=>{throw err});
-        })
+                    .then((res: AxiosResponse<Board>) => {
+                        const createdBoard = res.data;
+                        const boardsById: {[id: string]: Board} = snapshot.getLoadable(states.boardsById).contents;
+                        const newBoardsById = Object.assign({
+                            [createdBoard.id]: createdBoard
+                        }, boardsById);
+                        set(states.boardsById, newBoardsById);
+                    }).catch(err=>{throw err});
+        }, [])
         return createBoard;
     },
 
@@ -82,7 +82,7 @@ const hooks = {
                 boardId: string,
                 payload: Omit<Board, "id">
             )=> {
-                axios.put("boards/"+boardId, payload)
+                return axios.put("boards/"+boardId, payload)
                     .then(async (res: AxiosResponse<Board>) => {
                         // Get the current board state
                         const boardById = snapshot.getLoadable(states.boardsById).contents;
@@ -99,15 +99,14 @@ const hooks = {
             ({snapshot, set})=>(
                 boardId: string
             )=>{
-                axios.delete("boards/"+boardId)
+                return axios.delete("boards/"+boardId)
                     .then(async (res: AxiosResponse<Board>) => {
                         const boardById = snapshot.getLoadable(states.boardsById).contents;
                         const newBoardsById = Object.assign({}, boardById);
                         delete newBoardsById[boardId];
                         set(states.boardsById, newBoardsById);
                     }).catch((err)=>{throw err});
-            }
-        )
+        },[])
         return deleteBoard;
     }
 }

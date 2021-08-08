@@ -1,16 +1,22 @@
-import { atom, RecoilState, RecoilValueReadOnly, selector } from "recoil";
+import { atom, atomFamily, RecoilState, RecoilValueReadOnly, selector } from "recoil";
+import { Member } from "../models";
 
-const textState:RecoilState<string> = atom({
-    key: "textState",
-    default: "",
-});
-export default textState;
+const states = {
+    membersById: atomFamily({
+        key: "membersById",
+        default: {} as Member
+    }),
+    memberIds: atom({
+        key: "memberIds",
+        default: [] as string[]
+    })
+}
 
-export const charCounterState: RecoilValueReadOnly<number> = selector({
-    key: "charCounterState",
-    get: ({get}) => {
-        const text = get(textState);
-        return text.length;
-    }
-})
+const hooks = {
 
+} 
+
+export default {
+    states: states,
+    hooks: hooks,
+}

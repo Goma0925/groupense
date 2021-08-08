@@ -1,16 +1,94 @@
-import { atom, RecoilState, RecoilValueReadOnly, selector } from "recoil";
+import axios, { AxiosResponse } from "axios";
+import { atom, atomFamily, RecoilState, RecoilValueReadOnly, selector, useRecoilCallback, useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
+import { Entry } from "../models";
 
-const textState:RecoilState<string> = atom({
-    key: "textState",
-    default: "",
-});
-export default textState;
+const states = {
+    entriesById: atomFamily({
+        key: "entriesById",
+        default: {} as Entry,
+    }),
+    entryIds: atom({
+        key: "entryIds",
+        default: [] as string[],
+    })
+}
 
-export const charCounterState: RecoilValueReadOnly<number> = selector({
-    key: "charCounterState",
-    get: ({get}) => {
-        const text = get(textState);
-        return text.length;
+const hooks = {
+    useFetchAllEntries: ()=>{
+        const fetchAllEntriesByBoardId = useRecoilCallback(
+            ({snapshot, gotoSnapshot}) => (boardId: string) => {
+                return axios.get("/boards/"+boardId+"/entries")
+                    .then((res: AxiosResponse<Entry[]>) => {
+                        const newSnapshot = snapshot.map(({set})=>{
+                            const entryIds = [] as string[];
+                            res.data.map((entry)=>{
+                                set(states.entriesById(entry.id), entry);
+                                entryIds.push(entry.id);
+                            });
+                            set(states.entryIds, entryIds);
+                        })
+                        gotoSnapshot(newSnapshot);
+                    }).catch(err => {throw err});
+            }
+        ,[]);
+        return fetchAllEntriesByBoardId;
+    },
+
+    useCreateEntry: ()=>{
+        const createEntry = useRecoilCallback(
+            ({set, snapshot, gotoSnapshot}) => (
+                entry: Omit<Entry, "id">
+            ) => {
+                axios.post("/boards/"+entry.board_id+"/entries", entry)
+                    .then(async (res: AxiosResponse<Entry>) => {
+                        // Do not use snapshot update here, because it will cause
+                        // inconsistency in entryIds when running multiple create operations
+                        // at once.
+                        set(states.entriesById(res.data.id), res.data);
+                        set(states.entryIds, (prevEntryIds)=>{
+                            console.log("prevEntryIds", prevEntryIds)
+                            return prevEntryIds.concat([res.data.id])
+                        });
+                    }).catch(err => {throw err});
+            })
+        return createEntry;
+    },
+
+    useUpdateEntry: ()=>{
+        const updateEntryById = useRecoilCallback(
+            ({set, snapshot})=>(
+                entryId: string,
+                payload: Omit<Entry, "id">
+            )=>{
+                const entry = snapshot.getLoadable(states.entriesById(entryId)).getValue();
+                return axios.post("/boards/"+entry.board_id+"/entries"+entryId, payload)
+                    .then((res: AxiosResponse<Entry>)=>{
+                        set(states.entriesById(res.data.id), res.data);
+                    });
+            }, []);
+        return updateEntryById;
+    },
+
+    useDeleteEntry: ()=>{
+        return useRecoilCallback(
+            ({reset, snapshot})=>(
+                entryId: string
+            )=>{
+                const entry = snapshot.getLoadable(states.entriesById(entryId)).getValue();
+                return axios.delete("/boards/"+entry.board_id+"/entries"+entryId)
+                    .then((res: AxiosResponse<Entry>)=>{
+                        reset(states.entriesById(entryId));
+                    }).catch((err)=>{throw err});
+            }
+        ,[]);
     }
-})
+} 
 
+export default {
+    states: states,
+    hooks: hooks,
+}
+
+function useRecoildValue(boardId: any) {
+    throw new Error("Function not implemented.");
+}

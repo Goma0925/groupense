@@ -4,15 +4,13 @@ import BoardService from "../modules/BoardService";
 import { RecoilRoot,useRecoilState,useRecoilValue } from "recoil";
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
-import { getByTitleAsJson } from "./utils/helpers";
-import CONSTS from "../../const";
-import setupApp from "../../setupApp";
+import { getByTitleAsJson, renderRecoilValues } from "./utils/helpers";
 
-let boards: Board[];
+let mockBoards: Board[];
 let mockAPI: MockAdapter
 
 beforeAll(() => {
-    boards = [
+    mockBoards = [
         {id: "1", name: "Board 1"},
         {id: "3", name: "Board 3"},
         {id: "2", name: "Board 2"},
@@ -28,9 +26,9 @@ describe("BoardService hook tests",()=>{
     test(BoardService.hooks.useFetchAllBoards.name + ' hook should fetch all boards into ' + BoardService.states.boardsById.key
         + " and " + BoardService.states.sortedBoards.key + ".", async () => {
         
-        mockAPI.onGet("/boards").reply(200, boards);
+        mockAPI.onGet("/boards").reply(200, mockBoards);
 
-        function TestComponent(){
+        const [boardsById, sortedBoards, boardPreviewReady] = await renderRecoilValues(()=>{
             const sortedBoards = useRecoilValue(BoardService.states.sortedBoards);
             const boardsById = useRecoilValue(BoardService.states.boardsById);
             const boardPreviewReady = useRecoilValue(BoardService.states.boardPreviewReady);
@@ -39,54 +37,47 @@ describe("BoardService hook tests",()=>{
             useEffect(() => {
                 fetchAllBoards();
             }, []);
-            return (
-            // Render the data from boardsByIdState and sortedBoardState
-            <div>
-                <div title="boardsByIdJSON">{JSON.stringify(boardsById)}</div>
-                <div title="sortedBoardsByJSON">{JSON.stringify(sortedBoards)}</div>
-                <div title="boardPreviewReady">{JSON.stringify(boardPreviewReady)}</div>
-            </div>);
-        }
+
+            return [boardsById, sortedBoards, boardPreviewReady];
+        });
 
         // Check if boardsById state is updated.
-        const boardsById = await getByTitleAsJson<{[id: string]: Board}>("boardsByIdJSON", <RecoilRoot><TestComponent/></RecoilRoot>);
-        boards.map((originalBoard) => {
+        mockBoards.map((expectedBoard) => {
             // Make sure all the original board retrieved from API is stored in boardsById state.
-            expect(boardsById[originalBoard.id]).toEqual(originalBoard);
+            expect(boardsById[expectedBoard.id]).toEqual(expectedBoard);
         });
 
         // Sort the mock board data to check if sortedBoards state is properly working.
-        const expectedSortedBoards = [...boards].sort((a, b)=>{
+        const expectedSortedBoards = [...mockBoards].sort((a, b)=>{
             return a.id.localeCompare(b.id);
         })
         // Check if the sortedBoards were rendered in the correct order (ascending by ID))
-        const renderedSortedBoards = await getByTitleAsJson<Board[]>("sortedBoardsByJSON", <RecoilRoot><TestComponent/></RecoilRoot>);
-        expect(expectedSortedBoards).toEqual(renderedSortedBoards);
+        expect(sortedBoards).toEqual(expectedSortedBoards);
         // Check if the boardPreviewReady state is true after all the board info is loaded.
-        const boardPreviewReady = await getByTitleAsJson<boolean>("boardPreviewReady", <RecoilRoot><TestComponent/></RecoilRoot>);
         expect(boardPreviewReady).toBe(true);
     });
 
     test(BoardService.hooks.useCreateboard.name + ' hook should create a new board and store it in '
         + BoardService.states.boardsById.key + ".", async () => {
-        const [newBoardId, newBoardName] = ["4", "Board 4"]
-        const newBoard: Board = {id: newBoardId, name: "Board 4"};
-        mockAPI.onPost("/boards").reply(200, newBoard);
+        const newBoard1: Board = {id: "1", name: "Board 1"};
+        const newBoard2: Board = {id: "2", name: "Board 2"};
 
-        function TestComponent(){
+        mockAPI.onPost("/boards").reply(200, newBoard1)
+                .onPost("/boards").reply(200, newBoard2);
+
+        const [renderedBoard1, renderedBoard2] = await renderRecoilValues(()=>{
             const createBoard = BoardService.hooks.useCreateboard();
             const boardsById = useRecoilValue(BoardService.states.boardsById);
-            const newBoardFromAtom = boardsById[newBoardId]?boardsById[newBoardId]: {msg: "No board of ID '"+newBoardId+"' found."}; //Convert undefined to {}
+            const board1 = boardsById[newBoard1.id]??{msg: "No board of ID '"+newBoard1.id+"' found."}; //Convert undefined to {}
+            const board2 =  boardsById[newBoard2.id]??{msg: "No board of ID '"+newBoard2.id+"' found."}; //Convert undefined to {}
             useEffect(()=>{
-                createBoard({name: newBoardName});
+                createBoard({name: newBoard1.name});
             }, [])
-            return (
-                <div title="newBoard">{JSON.stringify(newBoardFromAtom)}</div>);
-        }
-
+            return [board1, board2];
+        });
         // Check if the board was created.
-        const createdBoard = await getByTitleAsJson<Board>("newBoard", <RecoilRoot><TestComponent/></RecoilRoot>)
-        expect(createdBoard).toEqual({id: newBoardId, name: newBoardName});
+        expect(renderedBoard1).toEqual(newBoard1);
+        expect(renderedBoard2).toEqual(newBoard2);
     })
 
     test(BoardService.hooks.useUpdateBoard.name + " hook should update the board specified by ID and reflect in "

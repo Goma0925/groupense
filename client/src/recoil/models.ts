@@ -20,3 +20,10 @@ export type Board = {
     name: string,
     id: string,
 }
+
+export type Transaction = {
+    id: string;
+    entry_id: string
+    member_id: string;
+    amount: number;
+}

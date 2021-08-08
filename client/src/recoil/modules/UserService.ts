@@ -64,7 +64,6 @@ const hooks = {
                         set(states.isLoggedIn, true);
                     }).catch((err: AxiosError)=>{
                         set(states.isLoggedIn, false);
-                        throw err;
                     })
         }, [])
         return login;
@@ -72,7 +71,7 @@ const hooks = {
 
     useLogout: ()=>{
         const logout = useCallback(()=>{
-            axios.post("/users/logout")
+            return axios.post("/users/logout")
                 .then(()=>{
                     window.location.replace(CONSTS.APP_URL);
                 })
@@ -84,14 +83,14 @@ const hooks = {
     useSignupToLogin: ()=>{
         // Sign up a user and login successively.
         const login = hooks.useLogin();
-        const signup = async (payload: UserAuthPayload)=>{
+        const signup = useCallback((payload: UserAuthPayload)=>{
             return axios.post("/users/signup", payload)
                 .then(async (res:AxiosResponse<User>) => {
                     login(payload);
                 }).catch((err)=>{
                     throw err;
             })
-        }
+        }, []);
         return signup;
     }
 }

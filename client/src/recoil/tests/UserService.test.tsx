@@ -1,14 +1,15 @@
-import { useEffect, useState } from "react";
-import { RecoilRoot,useRecoilState,useRecoilValue } from "recoil";
+import { useEffect } from "react";
+import { RecoilRoot, useRecoilValue } from "recoil";
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
-import { getByTitle, getByTitleAsJson } from "./utils/helpers";
+import { getByTitleAsJson } from "./utils/helpers";
 import UserService from "../modules/UserService";
 import CONSTS from "../../const";
 import { User } from "../models";
 import { act, render } from "@testing-library/react";
 import dotenv from "dotenv";
 
+dotenv.config();
 let mockAPI: MockAdapter;
 
 beforeAll(()=>{
