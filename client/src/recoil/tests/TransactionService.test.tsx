@@ -52,4 +52,59 @@ describe("TransactionService hook tests", ()=>{
             }));
         }
     );
+
+    test(TransactionService.hooks.useUpdateTransaction.name+" should update transaction data in atoms.",
+        async()=>{
+            const boardId = "1";
+            const originalTransaction: Transaction = {
+                id: "1",
+                entry_id: "1",
+                member_id: "1",
+                amount: 1000
+            }
+            const updatedTransaction: Transaction = {
+                "id": "1",
+                "entry_id": "1",
+                "member_id": "1",
+                "amount": 500
+            }
+            mockAPI.onPut(`/boards/${boardId}/entries/${originalTransaction.entry_id}/members/${originalTransaction.member_id}/transactions`)
+                    .reply(200, updatedTransaction);
+            const [transaction, transactionKeys] = await renderRecoilValues(()=>{
+                const updateTransaction = TransactionService.hooks.useUpdateTransaction();
+                const [transactionKeys, setTransactionKeys] = useRecoilState(TransactionService.states.transactionKeys);
+                const [transaction, setTransaction] = 
+                    useRecoilState(TransactionService.states.transactionsByKey({
+                        entryId: originalTransaction.entry_id,
+                        memberId: originalTransaction.member_id
+                    }))
+                const [doneSetup, setDoneSetup] = useState(false);
+                useEffect(()=>{
+                    // Setup atoms before testing updateTransaction()
+                    setTransaction(originalTransaction);
+                    setTransactionKeys([{
+                        memberId: originalTransaction.member_id, 
+                        entryId: originalTransaction.entry_id
+                    }]);
+                    setDoneSetup(true);
+                }, [])
+                useEffect(()=>{
+                    if (doneSetup){
+                        updateTransaction(
+                            boardId,
+                            originalTransaction.entry_id,
+                            originalTransaction.member_id,
+                            {amount: 500}
+                        )
+                    }
+                }, [doneSetup])
+                return [transaction, transactionKeys];
+            });
+            expect(transaction).toEqual(updatedTransaction);
+            expect(transactionKeys).toEqual([{
+                entryId: updatedTransaction.entry_id,
+                memberId: updatedTransaction.member_id
+            }]);
+        }
+    )
 })
