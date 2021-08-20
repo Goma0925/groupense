@@ -25,5 +25,31 @@ beforeEach(()=>{
 })
 
 describe("TransactionService hook tests", ()=>{
-    test.todo(TransactionService.hooks.useFetchTransactions.name+" should fetch transactions into atoms");
+    test(TransactionService.hooks.useFetchTransactions.name+" should fetch transactions into atoms",
+        async()=>{
+            const [boardId, entryId] = ["1", "1"];
+            mockAPI.onGet(`boards/${boardId}/entries/${entryId}/transactions`).reply(200, mockTransactions);
+            const [transactions, transactionKeys] = await renderRecoilValues(()=>{
+                const fetchTransactions = TransactionService.hooks.useFetchTransactions();
+                const transactionKeys = useRecoilValue(TransactionService.states.transactionKeys);
+                const transactions = mockTransactions.map((transaction)=>{
+                    return useRecoilValue(TransactionService.states.transactionsByKey({
+                        entryId: transaction.entry_id,
+                        memberId: transaction.member_id
+                    }))
+                });
+                useEffect(()=>{
+                    fetchTransactions("1", "1");
+                }, []);
+                return [transactions, transactionKeys];
+            })
+            expect(transactions.length).toBe(3);
+            expect(transactionKeys).toEqual(mockTransactions.map(transaction=>{
+                return {
+                    entryId: transaction.entry_id,
+                    memberId: transaction.member_id
+                }
+            }));
+        }
+    );
 })
