@@ -21,8 +21,9 @@ def get_user(token: str = Depends(oauth2_scheme), session: Session=Depends(get_s
     jwt_content:schemas.UserJWTContent = auth_util.decode_user_jwt(token, ACCESS_JWT_SECRET_KEY)
     username = jwt_content.sub
     user: models.User = session.query(models.User).filter(models.User.name==username).first()
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=error_json('Access token required.'))
     return user
-
 
 def verify_refresh_token(refresh_token: Optional[str] = Cookie(None), session=Depends(get_session)) \
         -> models.User:
