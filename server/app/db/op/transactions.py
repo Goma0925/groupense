@@ -17,6 +17,22 @@ def create_transaction_by_ids(entry_id: int, member_id:int, amount:float, sessio
     session.refresh(transaction_db)
     return transaction_db
 
+def create_or_update_transaction_by_ids(entry_id: int, payload: schemas.TransactionCreatePayloadWithMember, session: Session)\
+        -> models.Transaction:
+    transaction_db: models.Transaction = session.query(models.Transaction) \
+        .filter(models.Transaction.entry_id==entry_id) \
+        .filter(models.Transaction.member_id==payload.member_id).first()
+    if  transaction_db is None:
+        return create_transaction_by_ids(entry_id, payload.member_id, payload.amount, session)
+    return update_transaction_by_ids(
+        transaction_db.id,
+        schemas.TransactionUpdatePayload(
+            amount=payload.amount
+        ),
+        session
+    )
+
+
 def delete_transaction_by_ids(entry_id: int, transaction_id: int, session: Session) -> None:
     transaction_db: models.Transaction = session.query(models.Transaction) \
         .join(models.Entry) \

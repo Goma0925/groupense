@@ -49,7 +49,7 @@ class Entry(Base):
 
 class Transaction(Base):
     """
-        Linking table between Entry and Member
+        Linking table between Entry and Member.
         Keeps track of amount of money the member owed/paid for the entry(event).
     """
     __tablename__ = "Transaction"

@@ -23,6 +23,19 @@ def get_all_transactions(
     entry_db: models.Entry = op.entries.get_entry_by_ids(board_id, entry_id, session)
     return entry_db.transactions
 
+@router.post("/boards/{board_id}/entries/{entry_id}/transactions/createOrUpdate", response_model=schemas.Transaction)
+def create_or_update_transaction(
+        board_id: int, entry_id: int, payload: schemas.TransactionCreatePayloadWithMember,
+        user: models.User=Depends(get_user), session:Session=Depends(get_session)
+    ) -> models.Transaction:
+    # WARNING: The foreign key constraints are not enforced with SQLite.
+    # Validation to check if the entry and member exist is not performed.
+    op.permissions.check_authorization_by_board_id(board_id, user.id, session)
+    return op.transactions.create_or_update_transaction_by_ids(
+        entry_id, payload, session
+    )
+
+
 @router.put("/boards/{board_id}/entries/{entry_id}/transactions/{transaction_id}", response_model=schemas.Transaction)
 def update_transaction(
         board_id: int, entry_id: int, transaction_id:int, payload: schemas.TransactionUpdatePayload,
