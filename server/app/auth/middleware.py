@@ -11,7 +11,7 @@ from app.consts import ACCESS_JWT_SECRET_KEY, REFRESH_JWT_SECRET_KEY
 from app.db import schemas, models
 from app.db.middleware import get_session
 from app.auth import util as auth_util
-from app.routers.consts import API_ROOT_PATH, USER_ENDPOINT_PATH, TOKEN_ENDPOINT_PATH
+from app.api_routers.consts import API_ROOT_PATH, USER_ENDPOINT_PATH, TOKEN_ENDPOINT_PATH
 from app.util.json_response import error_json
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=API_ROOT_PATH + USER_ENDPOINT_PATH + TOKEN_ENDPOINT_PATH)

@@ -1,7 +1,8 @@
 from dotenv import load_dotenv
 load_dotenv()
 from fastapi import FastAPI
-from app.routers import root_router
+from app.api_routers import root_api_router
+from app.static_routers import root_static_router
 from app.db import database
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -23,8 +24,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(root_router)
-app.mount("/", StaticFiles(directory="app/static", html=True), name="static")
+app.include_router(root_api_router)
+app.include_router(root_static_router)
+app.mount("/static", StaticFiles(directory="app/static", html=True), name="static")
 
 
 

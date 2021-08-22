@@ -11,7 +11,7 @@ from app.db import schemas
 from app.db import models
 from app.auth import util as auth_util
 import app.db.op as op
-from app.routers.consts import USER_ENDPOINT_PATH, TOKEN_ENDPOINT_PATH
+from app.api_routers.consts import USER_ENDPOINT_PATH, TOKEN_ENDPOINT_PATH
 from app.util.json_response import error_json
 
 router = APIRouter(
@@ -39,7 +39,6 @@ def login(payload: OAuth2PasswordRequestForm = Depends(), session: Session=Depen
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=error_json("Password is incorrect"))
     # Set the refresh token in the HTTP only cookie
     refresh_token: str = auth_util.create_user_jwt(user_db.name, user_db.id, REFRESH_JWT_SECRET_KEY, DEFAULT_REFRESH_TOKEN_EXPIRE_MINUTES)
-    print("refresh_token!:", type(refresh_token))
     response = JSONResponse(
         content=schemas.AuthorizedUserJWTPayload(
             id=user_db.id,
